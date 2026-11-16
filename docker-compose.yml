@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - food-data:/data
+    restart: unless-stopped
+
+volumes:
+  food-data:
