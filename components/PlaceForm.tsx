@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/validate';
-import type { Place } from './types';
+import { Close, Locate } from './icons';
+import { CATEGORY_LABELS, type Place } from './types';
 
 type Props = {
   place?: Place;
@@ -23,7 +24,7 @@ export default function PlaceForm({ place, cities, pick, setPick, onClose, onSav
 
   const geocode = async () => {
     const q = [address, city].filter(Boolean).join(', ') || name;
-    if (!q) return setError('Type an address or a city first');
+    if (!q) return setError('Saisissez d’abord une adresse ou une ville.');
     setError('');
     try {
       const res = await fetch(
@@ -31,15 +32,15 @@ export default function PlaceForm({ place, cities, pick, setPick, onClose, onSav
       );
       const [hit] = await res.json();
       if (hit) setPick([Number(hit.lat), Number(hit.lon)]);
-      else setError('Address not found. Click the map instead.');
+      else setError('Adresse introuvable. Cliquez plutôt sur la carte.');
     } catch {
-      setError('Address search failed. Click the map instead.');
+      setError('La recherche d’adresse a échoué. Cliquez plutôt sur la carte.');
     }
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pick) return setError('Click the map to set the position');
+    if (!pick) return setError('Cliquez sur la carte pour placer l’adresse.');
     setBusy(true);
     const res = await fetch(place ? `/api/places/${place.id}` : '/api/places', {
       method: place ? 'PATCH' : 'POST',
@@ -48,31 +49,33 @@ export default function PlaceForm({ place, cities, pick, setPick, onClose, onSav
     });
     setBusy(false);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return setError(data.error ?? 'Save failed');
+    if (!res.ok) return setError(data.error ?? 'Échec de l’enregistrement.');
     onSaved(place?.id ?? data.id);
   };
 
   return (
     <aside className="panel">
-      <button className="close" onClick={onClose} aria-label="Close">
-        ×
+      <button className="close" onClick={onClose} aria-label="Fermer">
+        <Close />
       </button>
-      <h2>{place ? 'Edit place' : 'New place'}</h2>
+      <h2>{place ? 'Modifier l’adresse' : 'Nouvelle adresse'}</h2>
       <form onSubmit={submit}>
         <label>
-          Name
+          Nom
           <input required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <label>
-          Category
+          Catégorie
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
             {CATEGORIES.map((c) => (
-              <option key={c}>{c}</option>
+              <option key={c} value={c}>
+                {CATEGORY_LABELS[c]}
+              </option>
             ))}
           </select>
         </label>
         <label>
-          City
+          Ville
           <input required maxLength={100} list="cities" value={city} onChange={(e) => setCity(e.target.value)} />
           <datalist id="cities">
             {cities.map((c) => (
@@ -81,22 +84,24 @@ export default function PlaceForm({ place, cities, pick, setPick, onClose, onSav
           </datalist>
         </label>
         <label>
-          Address (optional)
+          Adresse <span className="optional">facultatif</span>
           <input maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} />
         </label>
         <button type="button" onClick={geocode}>
-          Find on map
+          <Locate /> Trouver sur la carte
         </button>
         <p className="hint">
-          {pick ? `Position: ${pick[0].toFixed(5)}, ${pick[1].toFixed(5)}. Click the map to change it.` : 'Click the map to set the position.'}
+          {pick
+            ? `Position : ${pick[0].toFixed(5)}, ${pick[1].toFixed(5)}. Cliquez sur la carte pour la modifier.`
+            : 'Cliquez sur la carte pour placer l’adresse.'}
         </p>
         {error && <p className="error" role="alert">{error}</p>}
-        <div className="row">
+        <div className="row actions">
           <button type="button" onClick={onClose}>
-            Cancel
+            Annuler
           </button>
           <button className="primary" disabled={busy}>
-            Save
+            {busy ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>
       </form>

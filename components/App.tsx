@@ -23,7 +23,7 @@ export default function App() {
   const reload = useCallback(async () => {
     const res = await fetch('/api/places');
     if (res.ok) setPlaces(await res.json());
-    else setError('Could not load places');
+    else setError('Impossible de charger les adresses.');
   }, []);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lat, lng }),
     });
-    if (!res.ok) setError('Could not move place');
+    if (!res.ok) setError('Impossible de déplacer l’adresse.');
     reload();
   };
 
@@ -78,7 +78,7 @@ export default function App() {
       />
       {error && (
         <p className="error banner" role="alert" onClick={() => setError('')}>
-          {error} (click to dismiss)
+          {error} (cliquer pour fermer)
         </p>
       )}
       <main>

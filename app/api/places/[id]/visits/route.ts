@@ -6,9 +6,9 @@ import { parseVisit, checkPhoto, IMAGE_TYPES } from '@/lib/validate';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const placeId = toId((await params).id);
-  if (!placeId) return bad('invalid id');
+  if (!placeId) return bad('identifiant invalide');
   const form = await req.formData().catch(() => null);
-  if (!form) return bad('expected multipart form data');
+  if (!form) return bad('formulaire multipart attendu');
 
   const r = parseVisit({ stars: form.get('stars'), comment: form.get('comment'), visited_on: form.get('visited_on') });
   if ('error' in r) return bad(r.error);
@@ -19,7 +19,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const db = getDb();
-  if (!db.prepare('SELECT 1 FROM places WHERE id = ?').get(placeId)) return bad('not found', 404);
+  if (!db.prepare('SELECT 1 FROM places WHERE id = ?').get(placeId)) return bad('introuvable', 404);
 
   const names: string[] = [];
   try {

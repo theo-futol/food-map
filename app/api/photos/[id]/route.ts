@@ -11,10 +11,10 @@ const filenameOf = (id: number) =>
 export async function GET(_req: Request, { params }: Ctx) {
   const id = toId((await params).id);
   const name = id && filenameOf(id);
-  if (!name) return bad('not found', 404);
+  if (!name) return bad('introuvable', 404);
   const type = Object.keys(IMAGE_TYPES).find((t) => name.endsWith(IMAGE_TYPES[t]))!;
   const data = await fs.readFile(path.join(UPLOAD_DIR, path.basename(name))).catch(() => null);
-  if (!data) return bad('file missing', 404);
+  if (!data) return bad('fichier manquant', 404);
   return new Response(data, {
     headers: {
       'Content-Type': type,
@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 export async function DELETE(_req: Request, { params }: Ctx) {
   const id = toId((await params).id);
   const name = id && filenameOf(id);
-  if (!name) return bad('not found', 404);
+  if (!name) return bad('introuvable', 404);
   getDb().prepare('DELETE FROM photos WHERE id = ?').run(id);
   removeFiles([name]);
   return Response.json({ ok: true });

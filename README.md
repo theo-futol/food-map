@@ -1,4 +1,4 @@
-# Food Map
+# MoumouneFood
 
 A personal map of every restaurant, snack and hotel I've tried in La Réunion, with ratings, comments and souvenir photos.
 

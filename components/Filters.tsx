@@ -1,4 +1,6 @@
 import { CATEGORIES, type Category } from '@/lib/validate';
+import { CategoryIcon, Plus } from './icons';
+import { CATEGORY_LABELS } from './types';
 
 type Props = {
   cities: string[];
@@ -13,35 +15,43 @@ type Props = {
 
 export default function Filters({ cities, city, setCity, cats, setCats, count, total, onAdd }: Props) {
   return (
-    <header className="filters">
-      <h1>Food Map</h1>
-      <label>
-        City{' '}
-        <select value={city} onChange={(e) => setCity(e.target.value)}>
-          <option value="">All cities</option>
-          {cities.map((c) => (
-            <option key={c}>{c}</option>
+    <header className="topbar">
+      <div className="brand">
+        <h1>
+          Moumoune<em>Food</em>
+        </h1>
+        <p className="count">
+          {count === total ? total : `${count} sur ${total}`} adresse{total > 1 ? 's' : ''}
+        </p>
+      </div>
+      <div className="filters">
+        <label className="select">
+          <span className="sr-only">Ville</span>
+          <select value={city} onChange={(e) => setCity(e.target.value)}>
+            <option value="">Toutes les villes</option>
+            {cities.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        <fieldset className="cats">
+          <legend className="sr-only">Catégories</legend>
+          {CATEGORIES.map((c) => (
+            <label key={c} className={`toggle cat-${c}`}>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={cats.includes(c)}
+                onChange={(e) => setCats(e.target.checked ? [...cats, c] : cats.filter((x) => x !== c))}
+              />
+              <CategoryIcon category={c} />
+              {CATEGORY_LABELS[c]}
+            </label>
           ))}
-        </select>
-      </label>
-      <fieldset>
-        <legend className="sr-only">Categories</legend>
-        {CATEGORIES.map((c) => (
-          <label key={c} className={`chip chip-${c}`}>
-            <input
-              type="checkbox"
-              checked={cats.includes(c)}
-              onChange={(e) => setCats(e.target.checked ? [...cats, c] : cats.filter((x) => x !== c))}
-            />
-            {c}
-          </label>
-        ))}
-      </fieldset>
-      <span className="count">
-        {count} / {total} places
-      </span>
-      <button className="primary" onClick={onAdd}>
-        + Add place
+        </fieldset>
+      </div>
+      <button className="primary add" onClick={onAdd}>
+        <Plus /> Ajouter une adresse
       </button>
     </header>
   );
