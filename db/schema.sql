@@ -18,3 +18,6 @@ CREATE TABLE IF NOT EXISTS photos (
   filename TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Locks the tables out of Supabase's REST API (anon key). The app connects as the table owner, which RLS doesn't apply to.
+ALTER TABLE places ENABLE ROW LEVEL SECURITY;
+ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
