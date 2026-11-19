@@ -6,6 +6,27 @@ import Slideshow from './Slideshow';
 import Stars from './Stars';
 import { CATEGORY_LABELS, type PlaceDetail, type Place } from './types';
 
+const MAX_EDGE = 1600; // enough for the full-screen slideshow
+const QUALITY = 0.7;
+
+// Shrink before upload: Vercel caps request bodies at 4.5 MB and phone photos are often bigger.
+// Re-encoding through a canvas also drops EXIF metadata (GPS position included).
+async function compress(file: File) {
+  const img = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+  img.close();
+  const encode = (type: string) => new Promise<Blob | null>((ok) => canvas.toBlob(ok, type, QUALITY));
+  const webp = await encode('image/webp');
+  // Safari can't encode WebP and silently returns a PNG instead.
+  const blob = webp?.type === 'image/webp' ? webp : await encode('image/jpeg');
+  if (!blob) throw new Error('encode failed');
+  return blob;
+}
+
 type Props = {
   id: number;
   onClose: () => void;
@@ -65,13 +86,19 @@ export default function PlacePanel({ id, onClose, onEdit, onChanged }: Props) {
 
   const addPhotos = async (input: HTMLInputElement) => {
     if (!input.files?.length) return;
-    const body = new FormData();
-    for (const f of input.files) body.append('photos', f);
+    const files = [...input.files];
+    input.value = '';
     setBusy(true);
     setError('');
+    const blobs = await Promise.all(files.map(compress)).catch(() => null);
+    if (!blobs) {
+      setBusy(false);
+      return setError('Une des photos n’a pas pu être lue. Essaie en JPEG ou PNG.');
+    }
+    const body = new FormData();
+    for (const b of blobs) body.append('photos', b, 'photo');
     const res = await fetch(`/api/places/${id}/photos`, { method: 'POST', body });
     setBusy(false);
-    input.value = '';
     if (!res.ok) return setError((await res.json().catch(() => ({}))).error ?? 'Impossible d’ajouter les photos.');
     load();
   };
@@ -181,7 +208,7 @@ export default function PlacePanel({ id, onClose, onEdit, onChanged }: Props) {
           <input
             type="file"
             className="sr-only"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/*"
             multiple
             disabled={busy}
             onChange={(e) => addPhotos(e.currentTarget)}

@@ -75,7 +75,7 @@ WITH
   )
 INSERT INTO places (name, category, city, lat, lng, approx_position)
 SELECT p.name, p.category, p.city,
-       c.lat + (random() % 500) / 100000.0,
-       c.lng + (random() % 500) / 100000.0,
+       c.lat + (random() - 0.5) / 100,
+       c.lng + (random() - 0.5) / 100,
        1
 FROM p JOIN c USING (city);

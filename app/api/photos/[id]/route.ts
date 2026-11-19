@@ -1,19 +1,18 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { getDb, bad, toId, removeFiles, UPLOAD_DIR } from '@/lib/db';
+import { query, bad, toId } from '@/lib/db';
+import { getFile, removeFiles } from '@/lib/storage';
 import { IMAGE_TYPES } from '@/lib/validate';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-const filenameOf = (id: number) =>
-  getDb().prepare('SELECT filename FROM photos WHERE id = ?').pluck().get(id) as string | undefined;
+const filenameOf = async (id: number) =>
+  (await query<{ filename: string }>('SELECT filename FROM photos WHERE id = $1', [id])).rows[0]?.filename;
 
 export async function GET(_req: Request, { params }: Ctx) {
   const id = toId((await params).id);
-  const name = id && filenameOf(id);
+  const name = id && (await filenameOf(id));
   if (!name) return bad('introuvable', 404);
   const type = Object.keys(IMAGE_TYPES).find((t) => name.endsWith(IMAGE_TYPES[t]))!;
-  const data = await fs.readFile(path.join(UPLOAD_DIR, path.basename(name))).catch(() => null);
+  const data = await getFile(name);
   if (!data) return bad('fichier manquant', 404);
   return new Response(data, {
     headers: {
@@ -26,9 +25,9 @@ export async function GET(_req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   const id = toId((await params).id);
-  const name = id && filenameOf(id);
+  const name = id && (await filenameOf(id));
   if (!name) return bad('introuvable', 404);
-  getDb().prepare('DELETE FROM photos WHERE id = ?').run(id);
-  removeFiles([name]);
+  await query('DELETE FROM photos WHERE id = $1', [id]);
+  await removeFiles([name]);
   return Response.json({ ok: true });
 }

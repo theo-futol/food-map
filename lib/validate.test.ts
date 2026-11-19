@@ -27,5 +27,5 @@ test('parsePlace stars and comment', () => {
 test('checkPhoto', () => {
   assert.equal(checkPhoto('image/jpeg', 1000), null);
   assert.ok(checkPhoto('image/svg+xml', 1000));
-  assert.ok(checkPhoto('image/png', 11 * 1024 * 1024));
+  assert.ok(checkPhoto('image/png', 3 * 1024 * 1024));
 });

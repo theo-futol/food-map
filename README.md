@@ -19,44 +19,60 @@ docker compose up -d --build
 
 Open http://localhost:3000.
 
-The database and photos are stored in the Docker volume `food-data`, so they survive rebuilds and restarts.
+The PostgreSQL data lives in the Docker volume `food-db` and the photos in `food-data`, so both survive rebuilds and restarts.
 
-> ⚠️ `docker compose down -v` deletes the volume and **all your data**. Use plain `docker compose down` instead.
+> ⚠️ `docker compose down -v` deletes the volumes and **all your data**. Use plain `docker compose down` instead.
 
 ## Local development
 
-Requires Node.js 22+.
+Requires Node.js 22+ and a PostgreSQL server, e.g. the one from compose:
 
 ```bash
+docker compose up -d db   # then expose it: add `ports: ["5432:5432"]` to the db service
+export DATABASE_URL=postgres://food:food@localhost:5432/food
 npm install
 npm run dev      # http://localhost:3000
 npm test         # validation tests
 npm run build    # production build (also type-checks)
 ```
 
-In development the data is stored in `./data/` (git-ignored).
+In development the photos are stored in `./data/uploads/` (git-ignored).
 
 ## Configuration
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DATA_DIR` | `./data` (`/data` in Docker) | Where `food-map.db` and `uploads/` live |
+| `DATABASE_URL` | none (set in `docker-compose.yml`) | PostgreSQL connection string |
+| `DATA_DIR` | `./data` (`/data` in Docker) | Where `uploads/` lives when Supabase Storage is not configured |
+| `SUPABASE_URL` | none | e.g. `https://xyz.supabase.co`. When set, photos go to Supabase Storage instead of `DATA_DIR`. Required on Vercel, which has no persistent disk. |
+| `SUPABASE_SERVICE_ROLE_KEY` | none | Supabase secret (service role) key, server-side only. Never expose it to the browser. |
 | `PORT` | `3000` | HTTP port |
+| `APP_PASSWORD` | none (required, set in `.env`) | The single password for the login page. If it is not set, nobody can log in. Changing it logs everyone out. |
+
+## Photos
+
+Photos are shrunk in the browser before upload: longest side 1600 px, re-encoded as WebP at 70% quality (JPEG on Safari, which can't encode WebP). This keeps each photo to a few hundred KB, under Vercel's 4.5 MB request limit, and removes EXIF metadata such as GPS position. The server rejects files over 2 MB.
+
+On Vercel, photos are stored in a **private** Supabase Storage bucket named `photos` and served through `/api/photos/[id]`, behind the login. Create the bucket once (Storage → New bucket, keep it private), or run this in the Supabase SQL editor:
+
+```sql
+insert into storage.buckets (id, name, public) values ('photos', 'photos', false) on conflict do nothing;
+```
 
 ## Backup and restore
 
-The app must be stopped so the SQLite files are consistent.
-
 ```bash
 # Backup
-docker compose stop
-docker compose run --rm -T app tar -C /data -cf - . > food-map-backup.tar
-docker compose start
+docker compose exec -T db pg_dump -U food --clean food > food-map-backup.sql
+docker compose stop app
+docker compose run --rm -T app tar -C /data -cf - . > food-map-photos.tar
+docker compose start app
 
 # Restore
-docker compose stop
-docker compose run --rm -T app tar -C /data -xf - < food-map-backup.tar
-docker compose start
+docker compose exec -T db psql -U food food < food-map-backup.sql
+docker compose stop app
+docker compose run --rm -T app tar -C /data -xf - < food-map-photos.tar
+docker compose start app
 ```
 
 ## Seed data
@@ -66,7 +82,7 @@ docker compose start
 ## Tech stack
 
 - [Next.js](https://nextjs.org) (App Router, TypeScript): UI and API in one app
-- [SQLite](https://sqlite.org) via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) with plain SQL, no ORM
+- [PostgreSQL](https://www.postgresql.org) via [node-postgres](https://node-postgres.com) with plain SQL, no ORM
 - [Leaflet](https://leafletjs.com) via [react-leaflet](https://react-leaflet.js.org), OpenStreetMap tiles
 - Docker multi-stage build with Next.js `standalone` output, running as a non-root user
 
@@ -89,9 +105,10 @@ components/
   PlaceForm.tsx                # add / edit place
   PlacePanel.tsx               # details, visits, photo upload
 lib/
-  db.ts                        # SQLite connection, schema, seeding
+  db.ts                        # PostgreSQL pool, schema, seeding
   validate.ts                  # input validation (+ validate.test.ts)
 db/
+  schema.sql                   # tables, created on every start if missing
   seed.sql                     # initial places
 Dockerfile
 docker-compose.yml

@@ -5,9 +5,9 @@ A personal map (La Réunion) of every place I've eaten at, with filters, ratings
 ## Stack
 
 - **Next.js** (App Router, TypeScript): UI and API route handlers in one app
-- **SQLite** via `better-sqlite3` with raw SQL. No ORM.
+- **PostgreSQL** via `pg` with raw SQL. No ORM.
 - **Leaflet** via `react-leaflet` with OpenStreetMap tiles (free, no API key)
-- **Docker**: multi-stage build with Next.js `output: "standalone"`. One named volume mounted at `/data` holds the DB and the photos.
+- **Docker**: multi-stage build with Next.js `output: "standalone"`. A `postgres` service holds the data (volume `food-db`); a named volume mounted at `/data` holds the photos.
 
 ## Features
 
@@ -106,7 +106,7 @@ components/
   PlaceForm.tsx
   PlacePanel.tsx        # details, visits, photo upload
 lib/
-  db.ts                 # better-sqlite3 connection, schema, runs seed.sql on an empty DB
+  db.ts                 # pg pool, schema, runs seed.sql on an empty DB
 db/
   seed.sql              # initial places from README
 Dockerfile
@@ -116,9 +116,9 @@ docker-compose.yml      # one service, named volume food-data:/data, port 3000
 ## Docker
 
 - `docker compose up -d --build` builds the image and starts the app on `http://localhost:3000`
-- Build stage: `node:22-alpine` plus the build tools `better-sqlite3` needs to compile
+- Build stage: `node:22-alpine`
 - Runtime stage: standalone output plus `db/seed.sql`, runs as a non-root user, `DATA_DIR=/data`
-- DB file at `/data/food-map.db` and photos in `/data/uploads/`, in the named volume `food-data` (a named volume avoids root-owned bind mounts on Linux). Backup and restore commands are in the README.
+- PostgreSQL in the `db` service (volume `food-db`), photos in `/data/uploads/`, in the named volume `food-data` (a named volume avoids root-owned bind mounts on Linux). Backup and restore commands are in the README.
 
 ## Out of scope (for now)
 

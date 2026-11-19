@@ -7,7 +7,8 @@ export const IMAGE_TYPES: Record<string, string> = {
   'image/webp': '.webp',
   'image/gif': '.gif',
 };
-export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+// Photos are shrunk in the browser first (see compress in PlacePanel), so real uploads are far below this.
+export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 
 type Result<T> = { value: T } | { error: string };
 
@@ -58,6 +59,6 @@ export function parsePlace(input: unknown, partial = false): Result<Record<strin
 
 export function checkPhoto(type: string, size: number): string | null {
   if (!IMAGE_TYPES[type]) return 'les photos doivent être au format JPEG, PNG, WebP ou GIF';
-  if (size > MAX_PHOTO_BYTES) return 'les photos ne doivent pas dépasser 10 Mo';
+  if (size > MAX_PHOTO_BYTES) return 'les photos ne doivent pas dépasser 2 Mo';
   return null;
 }

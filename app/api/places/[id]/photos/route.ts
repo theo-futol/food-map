@@ -1,7 +1,6 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { getDb, bad, toId, removeFiles, UPLOAD_DIR } from '@/lib/db';
+import { query, bad, toId } from '@/lib/db';
+import { putFile, removeFiles } from '@/lib/storage';
 import { checkPhoto, IMAGE_TYPES } from '@/lib/validate';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,21 +16,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (err) return bad(err);
   }
 
-  const db = getDb();
-  if (!db.prepare('SELECT 1 FROM places WHERE id = ?').get(placeId)) return bad('introuvable', 404);
+  if (!(await query('SELECT 1 FROM places WHERE id = $1', [placeId])).rowCount) return bad('introuvable', 404);
 
   const names: string[] = [];
   try {
     for (const f of files) {
       const name = randomUUID() + IMAGE_TYPES[f.type];
-      await fs.writeFile(path.join(UPLOAD_DIR, name), Buffer.from(await f.arrayBuffer()));
+      await putFile(name, f);
       names.push(name);
     }
-    const ins = db.prepare('INSERT INTO photos (place_id, filename) VALUES (?, ?)');
-    db.transaction(() => names.forEach((n) => ins.run(placeId, n)))();
+    // one statement, so all rows go in or none do
+    await query('INSERT INTO photos (place_id, filename) SELECT $1, unnest($2::text[])', [placeId, names]);
     return Response.json({ ok: true }, { status: 201 });
   } catch (e) {
-    removeFiles(names); // don't leave orphan files if the insert failed
+    await removeFiles(names); // don't leave orphan files if the insert failed
     throw e;
   }
 }
