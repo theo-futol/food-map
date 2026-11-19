@@ -2,7 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 // Supabase Storage when configured (Vercel has no persistent disk), a local folder otherwise (Docker, dev).
-const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+const { SUPABASE_SERVICE_ROLE_KEY } = process.env;
+// Keep only the origin: the dashboard shows the API URL with /rest/v1 appended, which would break the storage paths.
+const SUPABASE_URL = process.env.SUPABASE_URL && new URL(process.env.SUPABASE_URL).origin;
 const BUCKET = 'photos';
 const UPLOAD_DIR = path.join(process.env.DATA_DIR ?? path.join(process.cwd(), 'data'), 'uploads');
 
