@@ -9,16 +9,8 @@ export async function GET(_req: Request, { params }: Ctx) {
   const db = getDb();
   const place = db.prepare('SELECT * FROM places WHERE id = ?').get(id);
   if (!place) return bad('introuvable', 404);
-  const visits = db
-    .prepare('SELECT * FROM visits WHERE place_id = ? ORDER BY visited_on DESC, created_at DESC')
-    .all(id) as { id: number }[];
-  const photos = db
-    .prepare('SELECT ph.id, ph.visit_id FROM photos ph JOIN visits v ON v.id = ph.visit_id WHERE v.place_id = ?')
-    .all(id) as { id: number; visit_id: number }[];
-  return Response.json({
-    ...place,
-    visits: visits.map((v) => ({ ...v, photos: photos.filter((p) => p.visit_id === v.id).map((p) => p.id) })),
-  });
+  const photos = db.prepare('SELECT id FROM photos WHERE place_id = ? ORDER BY id').pluck().all(id);
+  return Response.json({ ...place, photos });
 }
 
 export async function PATCH(req: Request, { params }: Ctx) {
@@ -41,7 +33,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   if (!id) return bad('identifiant invalide');
   const db = getDb();
   const files = db
-    .prepare('SELECT ph.filename FROM photos ph JOIN visits v ON v.id = ph.visit_id WHERE v.place_id = ?')
+    .prepare('SELECT filename FROM photos WHERE place_id = ?')
     .pluck()
     .all(id) as string[];
   const { changes } = db.prepare('DELETE FROM places WHERE id = ?').run(id);

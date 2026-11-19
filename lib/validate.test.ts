@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePlace, parseVisit, checkPhoto } from './validate.ts';
+import { parsePlace, checkPhoto } from './validate.ts';
 
 const ok = { name: 'Tangor', category: 'restaurant', city: 'Saint-Leu', lat: -21.17, lng: 55.29 };
 
@@ -16,14 +16,12 @@ test('parsePlace', () => {
   assert.deepEqual(parsePlace(null), { error: 'le corps doit être un objet JSON' });
 });
 
-test('parseVisit', () => {
-  assert.deepEqual(parseVisit({ stars: '4', comment: ' good ', visited_on: '2026-01-02' }), {
-    value: { stars: 4, comment: 'good', visited_on: '2026-01-02' },
-  });
-  assert.deepEqual(parseVisit({}), { value: { stars: null, comment: null, visited_on: null } });
-  assert.deepEqual(parseVisit({ stars: '6' }), { error: 'la note doit être comprise entre 1 et 5' });
-  assert.deepEqual(parseVisit({ stars: '2.5' }), { error: 'la note doit être comprise entre 1 et 5' });
-  assert.deepEqual(parseVisit({ visited_on: '2026-13-40' }), { error: 'la date de visite est invalide' });
+test('parsePlace stars and comment', () => {
+  assert.deepEqual(parsePlace({ stars: 4, comment: ' bon ' }, true), { value: { stars: 4, comment: 'bon' } });
+  assert.deepEqual(parsePlace({ stars: null, comment: '' }, true), { value: { stars: null, comment: null } });
+  assert.deepEqual(parsePlace({ stars: 6 }, true), { error: 'La note est invalide' });
+  assert.deepEqual(parsePlace({ stars: 2.5 }, true), { error: 'La note est invalide' });
+  assert.deepEqual(parsePlace({ stars: '4' }, true), { error: 'La note est invalide' });
 });
 
 test('checkPhoto', () => {

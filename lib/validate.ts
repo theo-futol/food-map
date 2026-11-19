@@ -12,7 +12,16 @@ export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 type Result<T> = { value: T } | { error: string };
 
 // Shown to the user as API errors, so in French.
-const FIELDS: Record<string, string> = { name: 'Le nom', category: 'La catégorie', city: 'La ville', address: 'L’adresse', lat: 'La latitude', lng: 'La longitude' };
+const FIELDS: Record<string, string> = {
+  name: 'Le nom',
+  category: 'La catégorie',
+  city: 'La ville',
+  address: 'L’adresse',
+  lat: 'La latitude',
+  lng: 'La longitude',
+  stars: 'La note',
+  comment: 'Le commentaire',
+};
 
 const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
 const num = (v: unknown, min: number, max: number) =>
@@ -30,6 +39,9 @@ export function parsePlace(input: unknown, partial = false): Result<Record<strin
     ['address', (v) => (v == null || v === '' ? undefined : str(v, 300)), false],
     ['lat', (v) => num(v, -90, 90), true],
     ['lng', (v) => num(v, -180, 180), true],
+    // null or '' clears the rating or comment
+    ['stars', (v) => (v == null || v === '' ? undefined : Number.isInteger(v) ? num(v, 1, 5) : null), false],
+    ['comment', (v) => (v == null || v === '' ? undefined : str(v, 5000)), false],
   ];
   for (const [key, check, required] of rules) {
     if (!(key in b)) {
@@ -42,29 +54,6 @@ export function parsePlace(input: unknown, partial = false): Result<Record<strin
   }
   if (partial && Object.keys(out).length === 0) return { error: 'rien à modifier' };
   return { value: out };
-}
-
-export function parseVisit(f: { stars?: unknown; comment?: unknown; visited_on?: unknown }): Result<{
-  stars: number | null;
-  comment: string | null;
-  visited_on: string | null;
-}> {
-  let stars: number | null = null;
-  if (f.stars != null && f.stars !== '') {
-    stars = Number(f.stars);
-    if (!Number.isInteger(stars) || stars < 1 || stars > 5) return { error: 'la note doit être comprise entre 1 et 5' };
-  }
-  let comment: string | null = null;
-  if (typeof f.comment === 'string' && f.comment.trim()) {
-    if (f.comment.length > 5000) return { error: 'le commentaire est trop long' };
-    comment = f.comment.trim();
-  }
-  let visited_on: string | null = null;
-  if (typeof f.visited_on === 'string' && f.visited_on) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.visited_on) || isNaN(Date.parse(f.visited_on))) return { error: 'la date de visite est invalide' };
-    visited_on = f.visited_on;
-  }
-  return { value: { stars, comment, visited_on } };
 }
 
 export function checkPhoto(type: string, size: number): string | null {

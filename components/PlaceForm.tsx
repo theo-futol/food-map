@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CATEGORIES } from '@/lib/validate';
 import { Close, Locate } from './icons';
+import Stars from './Stars';
 import { CATEGORY_LABELS, type Place } from './types';
 
 type Props = {
@@ -19,6 +20,8 @@ export default function PlaceForm({ place, cities, pick, setPick, onClose, onSav
   const [category, setCategory] = useState<string>(place?.category ?? 'restaurant');
   const [city, setCity] = useState(place?.city ?? '');
   const [address, setAddress] = useState(place?.address ?? '');
+  const [stars, setStars] = useState(place?.stars ?? null);
+  const [comment, setComment] = useState(place?.comment ?? '');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -45,7 +48,7 @@ export default function PlaceForm({ place, cities, pick, setPick, onClose, onSav
     const res = await fetch(place ? `/api/places/${place.id}` : '/api/places', {
       method: place ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, category, city, address, lat: pick[0], lng: pick[1] }),
+      body: JSON.stringify({ name, category, city, address, stars, comment, lat: pick[0], lng: pick[1] }),
     });
     setBusy(false);
     const data = await res.json().catch(() => ({}));
@@ -86,6 +89,14 @@ export default function PlaceForm({ place, cities, pick, setPick, onClose, onSav
         <label>
           Adresse <span className="optional">facultatif</span>
           <input maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} />
+        </label>
+        <div className="field">
+          <span>Note</span>
+          <Stars value={stars} onChange={setStars} />
+        </div>
+        <label>
+          Commentaire
+          <textarea rows={3} maxLength={5000} value={comment} onChange={(e) => setComment(e.target.value)} />
         </label>
         <button type="button" onClick={geocode}>
           <Locate /> Trouver sur la carte

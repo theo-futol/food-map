@@ -4,7 +4,8 @@ import L from 'leaflet';
 import { useEffect, useRef, useState } from 'react';
 import { AttributionControl, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { CATEGORY_PATHS } from './icons';
-import { CATEGORY_LABELS, type Place, stars, visits } from './types';
+import Stars from './Stars';
+import { CATEGORY_LABELS, type Place } from './types';
 
 type Props = {
   places: Place[];
@@ -121,9 +122,7 @@ export default function Map({ places, selectedId, onSelect, onMove, picking, pic
                 <span className={`tag cat-${p.category}`}>{CATEGORY_LABELS[p.category]}</span> {p.city}
               </span>
               <strong className="pop-name">{p.name}</strong>
-              <span className="pop-meta">
-                {p.avg_stars != null && <span className="stars">{stars(p.avg_stars)}</span>} {visits(p.visit_count)}
-              </span>
+              {p.stars != null && <Stars value={p.stars} />}
               <button className="primary" onClick={() => onSelect(p.id)}>
                 Voir la fiche
               </button>

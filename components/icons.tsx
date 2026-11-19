@@ -31,3 +31,27 @@ export const CategoryIcon = ({ category }: { category: keyof typeof CATEGORY_PAT
     <path d={CATEGORY_PATHS[category]} />
   </svg>
 );
+
+export const Prev = () => (
+  <svg {...base}>
+    <path d="M15 5l-7 7 7 7" />
+  </svg>
+);
+
+export const Next = () => (
+  <svg {...base}>
+    <path d="M9 5l7 7-7 7" />
+  </svg>
+);
+
+export const Play = () => (
+  <svg {...base}>
+    <path d="M7 4.5v15l12-7.5z" />
+  </svg>
+);
+
+export const Pause = () => (
+  <svg {...base}>
+    <path d="M8 5v14M16 5v14" />
+  </svg>
+);
